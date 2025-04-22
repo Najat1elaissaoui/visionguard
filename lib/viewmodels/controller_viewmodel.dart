@@ -4,13 +4,14 @@ import '../models/usermodel.dart';
 
 class ControllerViewModel extends ChangeNotifier {
   String? qrCodeData;
+  List<UserModel> blindUsers = [];
 
-  // Méthode pour créer un utilisateur aveugle
+  final supabase = Supabase.instance.client;
+
   Future<void> createBlindUser({
     required String nom,
     required String prenom,
   }) async {
-    final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
 
     if (user == null) {
@@ -19,17 +20,16 @@ class ControllerViewModel extends ChangeNotifier {
     }
 
     try {
-      final response =
-          await supabase.from('utilisateurs_aveugles').insert({
-            'nom': nom,
-            'prenom': prenom,
-            'controller_id': user.id,
-          }).select();
+      final response = await supabase.from('utilisateurs_aveugles').insert({
+        'nom': nom,
+        'prenom': prenom,
+        'controller_id': user.id,
+      }).select();
 
       if (response.isNotEmpty) {
         final data = response.first;
         qrCodeData = "${data['nom']} ${data['prenom']}";
-        notifyListeners(); 
+        notifyListeners();
       } else {
         print("Erreur lors de l'ajout de l'utilisateur aveugle !");
       }
@@ -38,12 +38,7 @@ class ControllerViewModel extends ChangeNotifier {
     }
   }
 
-  // Liste des utilisateurs aveugles
-  List<UserModel> blindUsers = [];
-
-  // Méthode pour récupérer les utilisateurs aveugles
   Future<void> fetchBlindUsers() async {
-    final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
 
     if (user == null) {
@@ -55,18 +50,29 @@ class ControllerViewModel extends ChangeNotifier {
       final response = await supabase
           .from('utilisateurs_aveugles')
           .select()
-          .eq('controller_id', user.id); // Filtrer par controller_id
+          .eq('controller_id', user.id);
 
       if (response.isNotEmpty) {
         blindUsers = List<UserModel>.from(
           response.map((data) => UserModel.fromJson(data)),
         );
-        notifyListeners(); // Notifie les widgets écoutant ce modèle
+        notifyListeners();
       } else {
+        blindUsers = [];
+        notifyListeners();
         print("Aucun utilisateur aveugle trouvé !");
       }
     } catch (e) {
       print("Erreur de récupération des utilisateurs aveugles : $e");
+    }
+  }
+
+  Future<void> deleteUser(String userId) async {
+    try {
+      await supabase.from('utilisateurs_aveugles').delete().eq('id', userId);
+      print("Utilisateur supprimé avec succès !");
+    } catch (e) {
+      print("Erreur lors de la suppression de l'utilisateur : $e");
     }
   }
 }

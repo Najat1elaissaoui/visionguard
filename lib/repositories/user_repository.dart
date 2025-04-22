@@ -26,8 +26,6 @@ class BlindUserRepository {
       .eq('id', id)
       .single();
 
-  if (response == null) return null;
-
   return UserModel(
     nom: response['nom'],
     prenom: response['prenom'],

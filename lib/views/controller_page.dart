@@ -4,6 +4,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../viewmodels/controller_viewmodel.dart';
 
 class ControllerPage extends StatefulWidget {
+  const ControllerPage({super.key});
+
   @override
   _ControllerPageState createState() => _ControllerPageState();
 }
