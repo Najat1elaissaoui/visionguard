@@ -5,7 +5,7 @@ class QRDisplayPage extends StatelessWidget {
   final String qrData;
 
   // Le constructeur prend en paramètre les données à afficher dans le QR
-  QRDisplayPage({required this.qrData});
+  const QRDisplayPage({super.key, required this.qrData});
 
   @override
   Widget build(BuildContext context) {

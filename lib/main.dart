@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:visionguard/viewmodels/auth_viewmodel.dart';
+import 'package:visionguard/viewmodels/call_viewmodel.dart';
 import 'package:visionguard/viewmodels/controller_viewmodel.dart';
+import 'package:visionguard/views/auth/welcome_page.dart';
 import 'package:visionguard/views/auth/login.dart';
 
 void main() async {
@@ -28,6 +30,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => ControllerViewModel()),
+        ChangeNotifierProvider(create: (_) => CallViewModel()),
       ],
       child: MaterialApp(
         title: 'VisionGuard',
@@ -37,7 +40,7 @@ class MyApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
-        home: LoginScreen(),
+        home: WelcomePage(),
       ),
     );
   }
