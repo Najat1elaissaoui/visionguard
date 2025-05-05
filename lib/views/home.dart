@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/controller_viewmodel.dart';
 import '../models/usermodel.dart';
-import 'package:visionguard/views/UserDetailScreen.dart';
+import 'UserDetailScreen.dart';
+import 'add_blind_user_dialog.dart'; // <== IMPORTANT
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -28,34 +30,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Liste des utilisateurs"),
+        title: const Text("Liste des utilisateurs"),
       ),
       body: ListView.builder(
         itemCount: viewModel.blindUsers.length,
         itemBuilder: (context, index) {
           final user = viewModel.blindUsers[index];
           return ListTile(
-  title: Text("${user.nom} ${user.prenom}"),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UserDetailScreen(user: user),
-      ),
-    );
-  },
-);
-
+            title: Text("${user.nom} ${user.prenom}"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => UserDetailScreen(user: user),
+                ),
+              );
+            },
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/controller').then((_) {
-            // 🔁 Actualise les données après retour de la page Controller
-            _fetchUsers();
-          });
+        onPressed: () async {
+          await showDialog(
+            context: context,
+            builder: (_) => const AddBlindUserDialog(),
+          );
+          _fetchUsers(); // Recharge après fermeture de la popup
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }

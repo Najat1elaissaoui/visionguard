@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:visionguard/viewmodels/controller_viewmodel.dart';
 import 'package:visionguard/views/auth/login.dart';
-import 'package:visionguard/views/controller_page.dart';
+import 'package:visionguard/views/add_blind_user_dialog.dart';
 import 'package:visionguard/views/UserDetailScreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 class Homecontroller extends StatefulWidget {
   const Homecontroller({super.key});
 
@@ -28,7 +29,7 @@ class _HomecontrollerState extends State<Homecontroller> {
       return Consumer<ControllerViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.blindUsers.isEmpty) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           return ListView.builder(
@@ -36,26 +37,25 @@ class _HomecontrollerState extends State<Homecontroller> {
             itemBuilder: (context, index) {
               final user = viewModel.blindUsers[index];
               return Card(
-                margin: EdgeInsets.all(8.0),
+                margin: const EdgeInsets.all(8.0),
                 child: ListTile(
                   title: Text('${user.nom} ${user.prenom}'),
                   subtitle: Text('ID: ${user.id}'),
                   trailing: IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red),
+                    icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('Attention', style: TextStyle(color: Colors.red)),
-                          content: Text('Êtes-vous sûr de vouloir supprimer cet utilisateur ?'),
+                          title: const Text('Attention', style: TextStyle(color: Colors.red)),
+                          content: const Text('Êtes-vous sûr de vouloir supprimer cet utilisateur ?'),
                           actions: [
                             TextButton(
-                              child: Text('Non'),
+                              child: const Text('Non'),
                               onPressed: () => Navigator.of(context).pop(false),
                             ),
                             ElevatedButton(
-                            
-                              child: Text('Oui'),
+                              child: const Text('Oui'),
                               onPressed: () => Navigator.of(context).pop(true),
                             ),
                           ],
@@ -83,7 +83,7 @@ class _HomecontrollerState extends State<Homecontroller> {
         },
       );
     } else {
-      return Center(
+      return const Center(
         child: Text(
           'Settings',
           style: TextStyle(fontSize: 24),
@@ -98,30 +98,29 @@ class _HomecontrollerState extends State<Homecontroller> {
       create: (context) => controllerViewModel,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Utilisateurs Aveugles'),
+          title: const Text('Utilisateurs Aveugles'),
           actions: [
             IconButton(
-              icon: Icon(Icons.person_add),
+              icon: const Icon(Icons.person_add),
               tooltip: 'Ajouter un utilisateur',
               onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ControllerPage()),
+                await showDialog(
+                  context: context,
+                  builder: (context) => const AddBlindUserDialog(),
                 );
-                controllerViewModel.fetchBlindUsers();
+                controllerViewModel.fetchBlindUsers(); // Rafraîchit après ajout
               },
             ),
             IconButton(
-              icon: Icon(Icons.logout),
+              icon: const Icon(Icons.logout),
               tooltip: 'Déconnexion',
-              onPressed: ()async {
-                final supabase=Supabase.instance.client;
+              onPressed: () async {
+                final supabase = Supabase.instance.client;
                 await supabase.auth.signOut();
-                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
                   (route) => false,
                 );
-                // Logique de déconnexion ici
               },
             ),
           ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:visionguard/views/chat.dart';
-import 'package:visionguard/views/controller_page.dart';
+import 'package:visionguard/views/add_blind_user_dialog.dart';
 import 'package:visionguard/views/favorites.dart';
 
 import 'package:visionguard/views/playlists.dart';
@@ -21,7 +21,7 @@ class _BottomNavState extends State<BottomNav> {
   @override
   void initState() {
     screens = [
-      ControllerPage(),
+      AddBlindUserDialog() ,
       PlaylistsScreen(),
       ChatScreen(),
       FavoritesScreen(),
