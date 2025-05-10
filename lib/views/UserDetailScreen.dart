@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/usermodel.dart';
+import 'OpenStreetMap_page.dart';
 import 'call_screen.dart';
 
 class UserDetailScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
   static List<Widget> _widgetOptions(UserModel user) => [
     Container(), // Appel ne s'affiche jamais ici car on navigue directement
-    Center(child: Text("Position actuelle : ..")),
+    OpenstreetmapPage(trackedUserId: user.id),
     Center(child: Text("Autres informations sur ${user.nom}")),
   ];
 
