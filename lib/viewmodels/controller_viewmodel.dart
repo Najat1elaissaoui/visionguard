@@ -11,6 +11,7 @@ class ControllerViewModel extends ChangeNotifier {
   Future<void> createBlindUser({
     required String nom,
     required String prenom,
+    required String mdp,
   }) async {
     final user = supabase.auth.currentUser;
 
@@ -20,15 +21,24 @@ class ControllerViewModel extends ChangeNotifier {
     }
 
     try {
-      final response = await supabase.from('utilisateurs_aveugles').insert({
-        'nom': nom,
-        'prenom': prenom,
-        'controller_id': user.id,
-      }).select();
+      // Génère le contenu du QR code
+      final qrContent = "$nom $prenom $mdp";
+
+      // Insertion dans la base avec retour des données insérées
+      final response = await supabase
+          .from('utilisateurs_aveugles')
+          .insert({
+            'nom': nom,
+            'prenom': prenom,
+            'mdp': mdp,
+            'controller_id': user.id,
+            'qr_code': qrContent,
+          })
+          .select('*'); // récupère les valeurs insérées
 
       if (response.isNotEmpty) {
-        final data = response.first;
-        qrCodeData = "${data['nom']} ${data['prenom']}";
+        // On utilise la valeur réellement stockée dans Supabase
+        qrCodeData = response[0]['qr_code'] as String?;
         notifyListeners();
       } else {
         print("Erreur lors de l'ajout de l'utilisateur aveugle !");
@@ -66,6 +76,27 @@ class ControllerViewModel extends ChangeNotifier {
       print("Erreur de récupération des utilisateurs aveugles : $e");
     }
   }
+Future<bool> checkMdpExist(String mdp) async {
+  final user = supabase.auth.currentUser;
+
+  if (user == null) {
+    print("Aucun utilisateur connecté !");
+    return false;
+  }
+
+  try {
+    final response = await supabase
+        .from('utilisateurs_aveugles')
+        .select('mdp')
+        .eq('mdp', mdp)
+        .single();
+
+    return response != null; // Si un résultat est trouvé, le mot de passe existe déjà
+  } catch (e) {
+    print("Erreur lors de la vérification du mot de passe : $e");
+    return false;
+  }
+}
 
   Future<void> deleteUser(String userId) async {
     try {

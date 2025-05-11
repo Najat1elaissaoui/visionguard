@@ -13,7 +13,10 @@ class AddBlindUserDialog extends StatefulWidget {
 class _AddBlindUserDialogState extends State<AddBlindUserDialog> {
   final _nomController = TextEditingController();
   final _prenomController = TextEditingController();
+  final _mdpController = TextEditingController();
   bool _showQR = false;
+  String? _errorMessage;
+  String? _blindUserName;
 
   @override
   Widget build(BuildContext context) {
@@ -33,83 +36,153 @@ class _AddBlindUserDialogState extends State<AddBlindUserDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Add Blind User',
-                  style: TextStyle(
-                    color: Color(0xFF003049),
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  controller: _nomController,
-                  label: 'Nom',
-                  icon: Icons.person,
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _prenomController,
-                  label: 'Prénom',
-                  icon: Icons.person_outline,
-                ),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: () async {
-                    final nom = _nomController.text.trim();
-                    final prenom = _prenomController.text.trim();
-
-                    if (nom.isEmpty || prenom.isEmpty) return;
-
-                    await viewModel.createBlindUser(nom: nom, prenom: prenom);
-                    await viewModel.fetchBlindUsers();
-
-                    if (viewModel.qrCodeData != null) {
-                      setState(() => _showQR = true);
-                      await Future.delayed(const Duration(seconds: 3));
-                    }
-
-                    _nomController.clear();
-                    _prenomController.clear();
-
-                    if (mounted) Navigator.of(context).pop(); // ferme la popup
-                  },
-                  child: Container(
-                    height: 50,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF003049),
-                          Color(0xFF8ECAE6),
-                        ],
-                      ),
+                if (!_showQR) ...[
+                  // Titre visible uniquement avant la création du client
+                  const Text(
+                    'Add Blind User',
+                    style: TextStyle(
+                      color: Color(0xFF003049),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: const Center(
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: _nomController,
+                    label: 'Nom',
+                    icon: Icons.person,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _prenomController,
+                    label: 'Prénom',
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _mdpController,
+                    label: 'Mot de passe',
+                    icon: Icons.lock,
+                  ),
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
-                        'Create Blind User',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (_showQR && viewModel.qrCodeData != null)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.white,
-                    child: QrImageView(
-                      data: viewModel.qrCodeData!,
-                      version: QrVersions.auto,
-                      size: 150,
-                      backgroundColor: Colors.white,
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () async {
+                      final nom = _nomController.text.trim();
+                      final prenom = _prenomController.text.trim();
+                      final mdp = _mdpController.text.trim();
+
+                      if (nom.isEmpty || prenom.isEmpty || mdp.isEmpty) {
+                        setState(() {
+                          _errorMessage = 'Veuillez remplir tous les champs';
+                        });
+                        return;
+                      }
+
+                      try {
+                        // Vérifier si le mot de passe existe déjà dans la base de données
+                        final existingUser = await viewModel.checkMdpExist(mdp);
+
+                        if (existingUser) {
+                          setState(() {
+                            _errorMessage = 'Ce mot de passe existe déjà.';
+                          });
+                          return;
+                        }
+
+                        setState(() => _showQR = false);
+
+                        await viewModel.createBlindUser(
+                          nom: nom,
+                          prenom: prenom,
+                          mdp: mdp,
+                        );
+                        await viewModel.fetchBlindUsers();
+
+                        if (viewModel.qrCodeData != null && mounted) {
+                          setState(() {
+                            _blindUserName = "$nom $prenom";  // Récupère le nom complet
+                            _showQR = true;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Aveugle ajouté avec succès')),
+                          );
+                          await Future.delayed(const Duration(seconds: 3));
+                          if (mounted) Navigator.of(context).pop();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur: ${e.toString()}')),
+                          );
+                        }
+                      } finally {
+                        _nomController.clear();
+                        _prenomController.clear();
+                        _mdpController.clear();
+                      }
+                    },
+                    child: Container(
+                      height: 50,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(25),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF003049),
+                            Color(0xFF8ECAE6),
+                          ],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Create Blind User',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                ] else ...[
+                  // Après la création du client aveugle, ne pas afficher le titre
+                  const SizedBox(height: 12),
+                  Text(
+                    'Client ajouté avec succès',
+                    style: TextStyle(
+                      color: Color(0xFF003049),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Nom : $_blindUserName',
+                    style: TextStyle(
+                      color: Color(0xFF003049),
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  QrImageView(
+                    data: viewModel.qrCodeData!,
+                    version: QrVersions.auto,
+                    size: 150,
+                    backgroundColor: Colors.white,
+                  ),
+                ],
               ],
             ),
           ),

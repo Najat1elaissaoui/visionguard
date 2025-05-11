@@ -15,6 +15,8 @@ class BlindUserRepository {
     await _client.from('utilisateurs_aveugles').insert({
       'nom': user.nom,
       'prenom': user.prenom,
+       'mdp':user.mdp,
+       'qr_code':user.qrCode,
       'controller_id': userAuth.id,
     });
   }
@@ -29,7 +31,9 @@ class BlindUserRepository {
   return UserModel(
     nom: response['nom'],
     prenom: response['prenom'],
-    id: 'id',
+    id: response['id'],
+      mdp: response['mdp'],
+      qrCode: response['qr_code'],
     
   );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/usermodel.dart';
 import 'OpenStreetMap_page.dart';
 import 'call_screen.dart';
+import 'package:visionguard/views/InformationsPage.dart';
 
 class UserDetailScreen extends StatefulWidget {
   final UserModel user;
@@ -13,12 +14,12 @@ class UserDetailScreen extends StatefulWidget {
 }
 
 class _UserDetailScreenState extends State<UserDetailScreen> {
-  int _selectedIndex = 1; // Position sélectionnée par défaut
+  int _selectedIndex = 1; // Par défaut, l’onglet Position est sélectionné
 
   static List<Widget> _widgetOptions(UserModel user) => [
-    Container(), // Appel ne s'affiche jamais ici car on navigue directement
-    OpenstreetmapPage(trackedUserId: user.id),
-    Center(child: Text("Autres informations sur ${user.nom}")),
+    Container(), // L'appel est déclenché par navigation, pas ici
+    OpenstreetmapPage(trackedUserId: user.id), // Carte réelle
+    InformationsPage(user: user), // Affichage des infos utilisateur
   ];
 
   void _onItemTapped(int index) {
@@ -44,7 +45,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       ),
       body: _widgetOptions(widget.user)[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.phone),
             label: 'Appel',
