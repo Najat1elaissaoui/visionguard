@@ -12,6 +12,8 @@ class ControllerViewModel extends ChangeNotifier {
     required String nom,
     required String prenom,
     required String mdp,
+    required String sex,
+    required String avatarPath,
   }) async {
     final user = supabase.auth.currentUser;
 
@@ -33,6 +35,8 @@ class ControllerViewModel extends ChangeNotifier {
             'mdp': mdp,
             'controller_id': user.id,
             'qr_code': qrContent,
+            'avatar': avatarPath,
+
           })
           .select('*'); // récupère les valeurs insérées
 

@@ -39,23 +39,31 @@ class _HomecontrollerState extends State<Homecontroller> {
               return Card(
                 margin: const EdgeInsets.all(8.0),
                 child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: user.avatarPath != null && user.avatarPath!.isNotEmpty
+                        ? AssetImage(user.avatarPath!)
+                        : const AssetImage('assets/images/default_avatar.png'),
+                    onBackgroundImageError: (_, __) {
+                      print('Erreur de chargement image: ${user.avatarPath}');
+                    },
+                  ),
+
                   title: Text('${user.nom} ${user.prenom}'),
-                  subtitle: Text('ID: ${user.id}'),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
+                    icon: const Icon(Icons.delete, color: Colors.blue),
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Attention', style: TextStyle(color: Colors.red)),
-                          content: const Text('Êtes-vous sûr de vouloir supprimer cet utilisateur ?'),
+                          title: const Text('Attention !', style: TextStyle(color: Colors.red)),
+                          content: const Text('Are you sure you want to delete this user ?'),
                           actions: [
                             TextButton(
-                              child: const Text('Non'),
+                              child: const Text('No'),
                               onPressed: () => Navigator.of(context).pop(false),
                             ),
                             ElevatedButton(
-                              child: const Text('Oui'),
+                              child: const Text('Yes'),
                               onPressed: () => Navigator.of(context).pop(true),
                             ),
                           ],
@@ -63,8 +71,24 @@ class _HomecontrollerState extends State<Homecontroller> {
                       );
 
                       if (confirm == true) {
-                        await controllerViewModel.deleteUser(user.id);
-                        controllerViewModel.fetchBlindUsers();
+                        try {
+                          await controllerViewModel.deleteUser(user.id);
+                          controllerViewModel.fetchBlindUsers();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${user.nom} ${user.prenom} has been deleted.'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Error while deleting user.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -108,7 +132,7 @@ class _HomecontrollerState extends State<Homecontroller> {
                   context: context,
                   builder: (context) => const AddBlindUserDialog(),
                 );
-                controllerViewModel.fetchBlindUsers(); // Rafraîchit après ajout
+                controllerViewModel.fetchBlindUsers(); // Refresh list
               },
             ),
             IconButton(
@@ -119,7 +143,7 @@ class _HomecontrollerState extends State<Homecontroller> {
                 await supabase.auth.signOut();
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
+                      (route) => false,
                 );
               },
             ),

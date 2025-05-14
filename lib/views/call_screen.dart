@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../viewmodels/call_viewmodel.dart';
 import '../agora_config.dart';
 
@@ -10,6 +11,44 @@ class CallScreen extends StatefulWidget {
 }
 
 class _CallScreenState extends State<CallScreen> {
+  AudioPlayer? _audioPlayer;
+  bool _isPlayingRingtone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+
+    // Écoute des changements de l'état de l'appel
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<CallViewModel>(context, listen: false);
+      viewModel.addListener(() {
+        if (viewModel.remoteUid != null && _isPlayingRingtone) {
+          _stopRingtone();
+        }
+      });
+    });
+  }
+
+  /*Future<void> _playRingtone() async {
+    if (!_isPlayingRingtone) {
+      await _audioPlayer?.play(AssetSource('sounds/ringtone.mp3'), volume: 1.0);
+      _isPlayingRingtone = true;
+    }
+  }*/
+
+  Future<void> _stopRingtone() async {
+    await _audioPlayer?.stop();
+    _isPlayingRingtone = false;
+  }
+
+  @override
+  void dispose() {
+    _stopRingtone();
+    _audioPlayer?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<CallViewModel>(
@@ -36,10 +75,9 @@ class _CallScreenState extends State<CallScreen> {
           ),
           body: Stack(
             children: [
-              // Fond noir pour l'écran d'appel
               Container(color: Colors.black),
-              
-              // 1. Si pas en appel, afficher l'écran d'accueil
+
+              // Avant l'appel
               if (!viewModel.isInCall)
                 Center(
                   child: Column(
@@ -53,7 +91,10 @@ class _CallScreenState extends State<CallScreen> {
                       ),
                       SizedBox(height: 30),
                       FloatingActionButton.extended(
-                        onPressed: viewModel.toggleCall,
+                        onPressed: () async {
+                          
+                          await viewModel.startCall();
+                        },
                         backgroundColor: Colors.green,
                         label: const Text("Démarrer l'appel"),
                         icon: const Icon(Icons.call),
@@ -62,7 +103,7 @@ class _CallScreenState extends State<CallScreen> {
                   ),
                 ),
 
-              // 2. Si en appel mais pas encore rejoint, afficher un indicateur de chargement
+              // Chargement initial
               if (viewModel.isInCall && !viewModel.localUserJoined)
                 const Center(
                   child: Column(
@@ -78,11 +119,10 @@ class _CallScreenState extends State<CallScreen> {
                   ),
                 ),
 
-              // 3. Si en appel et rejoint localement, afficher les vidéos
+              // Vue vidéo
               if (viewModel.isInCall && viewModel.localUserJoined)
                 Stack(
                   children: [
-                    // Vidéo distante (utilisateur aveugle)
                     if (viewModel.remoteUid != null)
                       Center(
                         child: AgoraVideoView(
@@ -108,7 +148,7 @@ class _CallScreenState extends State<CallScreen> {
                         ),
                       ),
 
-                    // Vidéo locale (assistant)
+                    // Vidéo locale
                     Positioned(
                       right: 20,
                       bottom: 120,
@@ -131,7 +171,7 @@ class _CallScreenState extends State<CallScreen> {
                           child: AgoraVideoView(
                             controller: VideoViewController(
                               rtcEngine: viewModel.getEngine!,
-                              canvas: const VideoCanvas(uid: 0), // 0 pour la vue locale
+                              canvas: const VideoCanvas(uid: 0),
                             ),
                           ),
                         ),
@@ -140,7 +180,7 @@ class _CallScreenState extends State<CallScreen> {
                   ],
                 ),
 
-              // 4. Contrôles pendant l'appel
+              // Contrôles en bas
               if (viewModel.isInCall && viewModel.localUserJoined)
                 Positioned(
                   bottom: 20,
@@ -168,15 +208,15 @@ class _CallScreenState extends State<CallScreen> {
                           onPressed: viewModel.toggleCamera,
                         ),
                         Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                           child: IconButton(
                             icon: const Icon(Icons.call_end),
                             color: Colors.white,
                             iconSize: 30,
-                            onPressed: viewModel.toggleCall,
+                            onPressed: () {
+                              _stopRingtone();
+                              viewModel.endCall();
+                            },
                           ),
                         ),
                         IconButton(

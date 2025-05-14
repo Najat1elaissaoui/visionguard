@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../agora_config.dart';
 
 class CallViewModel extends ChangeNotifier {
@@ -26,67 +27,52 @@ class CallViewModel extends ChangeNotifier {
   // UID statique pour l'assistant
   final int _myUid = 1;
 
-  Future<void> toggleCall() async {
-    if (!_isInCall) {
-      // Vérifier et demander les permissions
-      await [Permission.camera, Permission.microphone].request();
+  Future<void> startCall() async {
+  _isInCall = true;
+  notifyListeners();
 
-      if (await Permission.camera.isGranted && await Permission.microphone.isGranted) {
-        try {
-          print("🚀 Initialisation de l'appel...");
-          await _initializeEngine();
-          
-          // Mettre à jour l'UI pour montrer que nous rejoignons
-          _isInCall = true;
-          notifyListeners();
-          
-          // Démarrer la prévisualisation locale
-          await _engine!.startPreview();
-          print("📽️ Prévisualisation locale démarrée");
-          
-          // Se joindre au canal
-          print("🔄 Tentative de rejoindre le canal: ${AgoraConfig.channelName} avec UID: $_myUid");
-          await _engine!.joinChannel(
-            token: AgoraConfig.token,
-            channelId: AgoraConfig.channelName,
-            uid: _myUid,
-            options: const ChannelMediaOptions(
-              clientRoleType: ClientRoleType.clientRoleBroadcaster,
-              channelProfile: ChannelProfileType.channelProfileCommunication,
-              publishCameraTrack: true,
-              publishMicrophoneTrack: true,
-              autoSubscribeVideo: true,
-              autoSubscribeAudio: true,
-            ),
-          );
-          
-          // L'utilisateur local (assistant) est maintenant considéré comme rejoint
-          // même si la callback n'a pas encore été déclenchée
-          _localUserJoined = true;
-          notifyListeners();
-          
-          print("✅ Demande de rejoindre le canal envoyée");
-        } catch (e) {
-          print("⛔ Erreur lors de l'initialisation de l'appel: $e");
-          _isInCall = false;
-          _localUserJoined = false;
-          notifyListeners();
-        }
-      } else {
-        print("⚠️ Permissions refusées");
-      }
-    } else {
-      // Quitter l'appel
-      print("🔴 Quitter l'appel...");
-      await _engine?.leaveChannel();
-      _isInCall = false;
-      _localUserJoined = false;
-      _remoteUid = null;
-      _isRemoteVideoReceived = false;
-      notifyListeners();
-      print("🔴 Appel terminé");
-    }
+  await _initializeEngine();
+
+  await _engine!.joinChannel(
+    token: AgoraConfig.token,
+    channelId: AgoraConfig.channelName,
+    uid: _myUid,
+    options: const ChannelMediaOptions(
+      clientRoleType: ClientRoleType.clientRoleBroadcaster,
+      channelProfile: ChannelProfileType.channelProfileCommunication,
+      publishCameraTrack: true,
+      publishMicrophoneTrack: true,
+      autoSubscribeVideo: true,
+      autoSubscribeAudio: true,
+    ),
+  );
+
+  await _sendCallSignal(); // renommé depuis _startCall
+}
+Future<void> endCall() async {
+  _isInCall = false;
+  _localUserJoined = false;
+  _remoteUid = null;
+  _isRemoteVideoReceived = false;
+  notifyListeners();
+
+  await _engine?.leaveChannel();
+  await _engine?.release();
+  _engine = null;
+}
+
+Future<void> _sendCallSignal() async {
+  try {
+    final supabase = Supabase.instance.client;
+    await supabase.channel('calls_channel').sendBroadcastMessage(
+      event: 'incoming_call',
+      payload: {'from': 'assistant'},
+    );
+    print("📡 Sonnerie envoyée à l'utilisateur aveugle.");
+  } catch (e) {
+    print("❌ Erreur lors de l'envoi de l'appel : $e");
   }
+}
 
   Future<void> _initializeEngine() async {
     if (_engine != null) {
@@ -111,7 +97,7 @@ class CallViewModel extends ChangeNotifier {
           notifyListeners();
         },
         onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
-          print("⚠️ [CONNECTION] État de connexion: $state, raison: $reason");
+          print("⚠ [CONNECTION] État de connexion: $state, raison: $reason");
           
           // Gestion automatique des reconnexions
           if (state == ConnectionStateType.connectionStateDisconnected ||

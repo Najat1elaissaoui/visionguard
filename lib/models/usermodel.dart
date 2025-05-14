@@ -4,6 +4,7 @@ class UserModel {
   final String id;
   final String mdp;
   final String qrCode;
+  final String avatarPath;
 
   UserModel({
     required this.nom,
@@ -11,6 +12,7 @@ class UserModel {
     required this.id,
     required this.mdp,
     required this.qrCode,
+    required this.avatarPath,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class UserModel {
       id: json['id'] ?? '',
       mdp: json['mdp'] ?? '',
       qrCode: json['qr_code'] ?? '',
+      avatarPath: json['avatar'] ?? '',
     );
   }
 }

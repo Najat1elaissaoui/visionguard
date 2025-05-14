@@ -34,6 +34,7 @@ class BlindUserRepository {
     id: response['id'],
       mdp: response['mdp'],
       qrCode: response['qr_code'],
+      avatarPath: 'avatar',
     
   );
 }
