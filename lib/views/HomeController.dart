@@ -5,6 +5,8 @@ import 'package:visionguard/views/auth/login.dart';
 import 'package:visionguard/views/add_blind_user_dialog.dart';
 import 'package:visionguard/views/UserDetailScreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:visionguard/views/settings.dart';
+
 
 class Homecontroller extends StatefulWidget {
   const Homecontroller({super.key});
@@ -107,12 +109,7 @@ class _HomecontrollerState extends State<Homecontroller> {
         },
       );
     } else {
-      return const Center(
-        child: Text(
-          'Settings',
-          style: TextStyle(fontSize: 24),
-        ),
-      );
+      return const SettingsScreen();
     }
   }
 

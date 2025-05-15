@@ -26,77 +26,73 @@ class _InformationsPageState extends State<InformationsPage> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(26.0),
-          child: Center(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(26.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // TITRE EN DEHORS DE LA CARTE
                 Text(
                   "Informations sur ${widget.user.nom}",
                   style: const TextStyle(
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
 
-                // CARTE AVEC INFOS
+                // Profile Card
                 Container(
-                  width: 300,
-                  height: 380,
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.4),
-                        spreadRadius: 2,
-                        blurRadius: 5,
+                        color: Colors.black12,
+                        blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          infoLine("Nom :", widget.user.nom),
-                          const SizedBox(height: 8),
-                          infoLine("Prénom :", widget.user.prenom),
-                          const SizedBox(height: 8),
-                          infoLine(
-                            "Mot de passe :",
-                            widget.user.mdp != null && widget.user.mdp!.isNotEmpty
-                                ? widget.user.mdp!
-                                : 'Non disponible',
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            "Code QR :",
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Color(0xFF003049),
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          widget.user.qrCode != null && widget.user.qrCode!.isNotEmpty
-                              ? QrImageView(
-                                  data: widget.user.qrCode!,
-                                  version: QrVersions.auto,
-                                  size: 130.0,
-                                )
-                              : const Text("Aucun code QR disponible pour cet utilisateur."),
-                        ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      infoLine("Nom", widget.user.nom),
+                      const SizedBox(height: 12),
+                      infoLine("Prénom", widget.user.prenom),
+                      const SizedBox(height: 12),
+                      infoLine(
+                        "Mot de passe",
+                        widget.user.mdp != null && widget.user.mdp!.isNotEmpty
+                            ? widget.user.mdp!
+                            : 'Non disponible',
                       ),
-                    ),
+                      const SizedBox(height: 20),
+
+                      const Text(
+                        "Code QR",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF003049),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: widget.user.qrCode != null &&
+                            widget.user.qrCode!.isNotEmpty
+                            ? QrImageView(
+                          data: widget.user.qrCode!,
+                          version: QrVersions.auto,
+                          size: 130.0,
+                        )
+                            : const Text(
+                            "Aucun code QR disponible pour cet utilisateur."),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -107,27 +103,25 @@ class _InformationsPageState extends State<InformationsPage> {
     );
   }
 
-  // Fonction utilitaire pour ligne d'info (label en bleu, donnée en noir)
   Widget infoLine(String label, String value) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          "$label :",
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
             color: Color(0xFF003049),
-            fontWeight: FontWeight.bold,
           ),
-          textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 18,
-            color: Colors.black,
+            fontSize: 16,
+            color: Colors.black87,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:visionguard/viewmodels/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
+import 'package:visionguard/viewmodels/auth_viewmodel.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -32,7 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _saveAll() async {
     final viewModel = Provider.of<AuthViewModel>(context, listen: false);
-
     final name = _displayNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -49,11 +48,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (name.isNotEmpty && name != viewModel.displayName) {
       success &= await viewModel.updateDisplayName(name);
     }
-
     if (email.isNotEmpty && email != viewModel.displayEmail) {
       success &= await viewModel.updateEmail(email);
     }
-
     if (password.isNotEmpty) {
       success &= await viewModel.updatePassword(password);
     }
@@ -77,36 +74,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final viewModel = Provider.of<AuthViewModel>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Settings")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _displayNameController,
-              decoration: const InputDecoration(labelText: 'Display Name'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'New Email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'New Password'),
-            ),
-            const SizedBox(height: 24),
-            viewModel.isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _saveAll,
-                    child: const Text("Save Changes"),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Avatar + Name Section
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 45,
+                  backgroundColor: Colors.blueAccent,
+                  child: Text(
+                    viewModel.displayName?.isNotEmpty == true
+                        ? viewModel.displayName![0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(fontSize: 36, color: Colors.white),
                   ),
-          ],
-        ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  viewModel.displayName ?? 'No Name',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          const Text(
+            "Profile Information",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+
+          // Name Field
+          TextField(
+            controller: _displayNameController,
+            decoration: const InputDecoration(
+              labelText: 'Full Name',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Email Field
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email Address',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.email),
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+
+          // Password Field
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'New Password',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.lock),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Save Button
+          GestureDetector(
+            onTap: viewModel.isLoading ? null : _saveAll,
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF003049),
+                    Color(0xFF8ECAE6),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: viewModel.isLoading
+                    ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.save, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        ],
       ),
     );
   }

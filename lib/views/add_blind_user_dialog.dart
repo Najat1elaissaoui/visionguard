@@ -170,7 +170,7 @@ class _AddBlindUserDialogState extends State<AddBlindUserDialog> {
 
                       if (nom.isEmpty || prenom.isEmpty || mdp.isEmpty || selectedSex == null || selectedAvatar == null) {
                         setState(() {
-                          _errorMessage = 'Veuillez remplir tous les champs';
+                          _errorMessage = 'please fill in for all the fields.';
                         });
                         return;
                       }
@@ -181,7 +181,7 @@ class _AddBlindUserDialogState extends State<AddBlindUserDialog> {
 
                         if (existingUser) {
                           setState(() {
-                            _errorMessage = 'Ce mot de passe existe déjà.';
+                            _errorMessage = 'Password already exists.';
                           });
                           return;
                         }
@@ -203,7 +203,7 @@ class _AddBlindUserDialogState extends State<AddBlindUserDialog> {
                             _showQR = true;
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Client ajouté avec succès')),
+                            const SnackBar(content: Text('Account created successfully')),
                           );
                           await Future.delayed(const Duration(seconds: 3));
                           if (mounted) Navigator.of(context).pop();
@@ -248,7 +248,7 @@ class _AddBlindUserDialogState extends State<AddBlindUserDialog> {
                   // Après la création du client aveugle, ne pas afficher le titre
                   const SizedBox(height: 12),
                   Text(
-                    'Client ajouté avec succès',
+                    'Account created successfully',
                     style: TextStyle(
                       color: Color(0xFF003049),
                       fontSize: 18,
