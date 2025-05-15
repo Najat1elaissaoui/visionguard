@@ -31,7 +31,7 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
             SizedBox(height: 100),
             Text(
-              'Bienvenue',
+              'Welcome',
               style: TextStyle(
                 fontSize: 30,
                 color: Colors.white,
@@ -44,7 +44,7 @@ class _WelcomePageState extends State<WelcomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SignupScreen()),
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
                 );
               },
               child: Container(
@@ -73,7 +73,7 @@ class _WelcomePageState extends State<WelcomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                  MaterialPageRoute(builder: (context) => SignupScreen()),
                 );
               },
               child: Container(
