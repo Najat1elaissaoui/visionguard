@@ -122,7 +122,7 @@ class _HomecontrollerState extends State<Homecontroller> {
       create: (context) => controllerViewModel,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Utilisateurs Aveugles'),
+          title: const Text('Blind Users'),
           actions: [
             IconButton(
               icon: const Icon(Icons.person_add),
