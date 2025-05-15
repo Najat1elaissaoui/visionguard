@@ -70,9 +70,6 @@ class _OpenstreetmapPageState extends State<OpenstreetmapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tracking de l\'utilisateur aveugle'),
-      ),
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
