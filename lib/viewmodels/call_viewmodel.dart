@@ -5,8 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../agora_config.dart';
 
 class CallViewModel extends ChangeNotifier {
+  final supabase = Supabase.instance.client;
   RtcEngine? _engine;
   RtcEngine? get getEngine => _engine;
+  late final RealtimeChannel _callchanel;
 
   bool _isInCall = false;
   bool _isMuted = false;
@@ -15,6 +17,7 @@ class CallViewModel extends ChangeNotifier {
   bool _localUserJoined = false;
   int? _remoteUid;
   bool _isRemoteVideoReceived = false;
+  bool _isListeningForCallEvents = false;
 
   bool get isInCall => _isInCall;
   bool get isMuted => _isMuted;
@@ -24,110 +27,92 @@ class CallViewModel extends ChangeNotifier {
   int? get remoteUid => _remoteUid;
   bool get isRemoteVideoReceived => _isRemoteVideoReceived;
 
-  // UID statique pour l'assistant
   final int _myUid = 1;
 
+  CallViewModel() {
+    _callchanel = supabase.channel('calls_channel');
+    _initializeEngine();
+    _setupChannelListeners();
+  }
+
+  Future<void> _setupChannelListeners() async {
+    await _listenForCallEvents();
+  }
+
   Future<void> startCall() async {
-  _isInCall = true;
-  notifyListeners();
+    _isInCall = true;
+    notifyListeners();
 
-  await _initializeEngine();
+    await _initializeEngine();
 
-  await _engine!.joinChannel(
-    token: AgoraConfig.token,
-    channelId: AgoraConfig.channelName,
-    uid: _myUid,
-    options: const ChannelMediaOptions(
-      clientRoleType: ClientRoleType.clientRoleBroadcaster,
-      channelProfile: ChannelProfileType.channelProfileCommunication,
-      publishCameraTrack: true,
-      publishMicrophoneTrack: true,
-      autoSubscribeVideo: true,
-      autoSubscribeAudio: true,
-    ),
-  );
-
-  await _sendCallSignal(); // renommé depuis _startCall
-}
-Future<void> endCall() async {
-  _isInCall = false;
-  _localUserJoined = false;
-  _remoteUid = null;
-  _isRemoteVideoReceived = false;
-  notifyListeners();
-
-  await _engine?.leaveChannel();
-  await _engine?.release();
-  _engine = null;
-}
-
-Future<void> _sendCallSignal() async {
-  try {
-    final supabase = Supabase.instance.client;
-    await supabase.channel('calls_channel').sendBroadcastMessage(
-      event: 'incoming_call',
-      payload: {'from': 'assistant'},
+    await _engine!.joinChannel(
+      token: AgoraConfig.token,
+      channelId: AgoraConfig.channelName,
+      uid: _myUid,
+      options: const ChannelMediaOptions(
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+        publishCameraTrack: true,
+        publishMicrophoneTrack: true,
+        autoSubscribeVideo: true,
+        autoSubscribeAudio: true,
+      ),
     );
-    print("📡 Sonnerie envoyée à l'utilisateur aveugle.");
+
+    await _sendCallSignal();
+  }
+
+  Future<void> endCall() async {
+  print('📴 Fin d\'appel côté assistant');
+  try {
+    await _engine?.leaveChannel();
+    _isInCall = false;
+    _localUserJoined = false;
+    _remoteUid = null;
+    notifyListeners();
+
+    // ✅ Envoi de l'événement 'call_end_assistant' via le canal Supabase
+    await _callchanel.sendBroadcastMessage(
+      event: 'call_end_assistant',
+      payload: {
+        "uid": _myUid,
+        "status": "ended",
+        "timestamp": DateTime.now().toIso8601String(),
+      },
+    );
+
+    print('📤 Message "call_end_assistant" envoyé avec succès');
   } catch (e) {
-    print("❌ Erreur lors de l'envoi de l'appel : $e");
+    print('❌ Erreur lors de endCall: $e');
   }
 }
+
+
+  Future<void> _sendCallSignal() async {
+    try {
+      _callchanel.sendBroadcastMessage(
+        event: 'incoming_call',
+        payload: {'from': 'assistant'},
+      );
+      print("📡 Sonnerie envoyée à l'utilisateur aveugle.");
+    } catch (e) {
+      print("❌ Erreur lors de l'envoi de l'appel : $e");
+    }
+  }
 
   Future<void> _initializeEngine() async {
     if (_engine != null) {
       await _engine!.release();
     }
-    
-    print("======== INITIALISATION AGORA ========");
-    print("App ID: ${AgoraConfig.appId}");
-    print("Channel: ${AgoraConfig.channelName}");
-    print("Local UID: $_myUid");
-    
+
     _engine = createAgoraRtcEngine();
-    await _engine!.initialize(RtcEngineContext(
-      appId: AgoraConfig.appId,
-    ));
+    await _engine!.initialize(RtcEngineContext(appId: AgoraConfig.appId));
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          print("✅ [LOCAL] Rejoindre le canal réussi - UID: ${connection.localUid}");
+          print("✅ [LOCAL] Rejoint le canal - UID: ${connection.localUid}");
           _localUserJoined = true;
-          notifyListeners();
-        },
-        onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
-          print("⚠ [CONNECTION] État de connexion: $state, raison: $reason");
-          
-          // Gestion automatique des reconnexions
-          if (state == ConnectionStateType.connectionStateDisconnected ||
-              state == ConnectionStateType.connectionStateFailed) {
-            if (_isInCall) {
-              print("🔄 Tentative de reconnexion automatique...");
-              // Attendre 2 secondes avant de tenter une reconnexion
-              Future.delayed(Duration(seconds: 2), () {
-                if (_isInCall) {
-                  _engine!.joinChannel(
-                    token: AgoraConfig.token,
-                    channelId: AgoraConfig.channelName,
-                    uid: _myUid,
-                    options: const ChannelMediaOptions(
-                      clientRoleType: ClientRoleType.clientRoleBroadcaster,
-                      channelProfile: ChannelProfileType.channelProfileCommunication,
-                      publishCameraTrack: true,
-                      publishMicrophoneTrack: true,
-                      autoSubscribeVideo: true,
-                      autoSubscribeAudio: true,
-                    ),
-                  );
-                }
-              });
-            }
-          }
-        },
-        onFirstRemoteVideoFrame: (RtcConnection connection, int remoteUid, int width, int height, int elapsed) {
-          print("📹 [REMOTE] Première image vidéo reçue de UID: $remoteUid, dimensions: $width x $height");
-          _isRemoteVideoReceived = true;
           notifyListeners();
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
@@ -140,41 +125,30 @@ Future<void> _sendCallSignal() async {
           if (_remoteUid == remoteUid) {
             _remoteUid = null;
             _isRemoteVideoReceived = false;
+            if (_isInCall && reason == UserOfflineReasonType.userOfflineQuit) {
+              print("📴 L'utilisateur distant a quitté, on termine l'appel");
+              endCall();
+            }
             notifyListeners();
           }
+        },
+        onFirstRemoteVideoFrame: (RtcConnection connection, int remoteUid, int width, int height, int elapsed) {
+          print("📹 [REMOTE] Première image reçue de $remoteUid");
+          _isRemoteVideoReceived = true;
+          notifyListeners();
         },
         onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
-          print("📺 [REMOTE] État vidéo - UID: $remoteUid, état: $state, raison: $reason");
-          
-          if (state == RemoteVideoState.remoteVideoStateDecoding) {
-            print("📺 [REMOTE] Vidéo distante en cours de lecture");
-            _isRemoteVideoReceived = true;
-            notifyListeners();
-          } else if (state == RemoteVideoState.remoteVideoStateStopped) {
-            print("📺 [REMOTE] Vidéo distante arrêtée");
-            _isRemoteVideoReceived = false;
-            notifyListeners();
-          }
-        },
-        onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
-          print("🔊 [REMOTE] État audio - UID: $remoteUid, état: $state, raison: $reason");
+          print("📺 État vidéo $state pour UID $remoteUid, raison: $reason");
         },
         onError: (ErrorCodeType err, String msg) {
-          print("⛔ [ERROR] Erreur Agora: $err, $msg");
-          
-          // Gestion des erreurs critiques
-          if (err == ErrorCodeType.errTokenExpired) {
-            print("⛔ [ERROR] Problème de token, reconnexion requise");
-            // Ici, vous pourriez implémenter une logique pour obtenir un nouveau token
-          }
+          print("⛔ Erreur Agora: $err - $msg");
         },
       ),
     );
 
     await _engine!.enableVideo();
     await _engine!.enableAudio();
-    
-    // Configure video encoder avec paramètres optimisés
+
     await _engine!.setVideoEncoderConfiguration(
       const VideoEncoderConfiguration(
         dimensions: VideoDimensions(width: 640, height: 360),
@@ -184,8 +158,47 @@ Future<void> _sendCallSignal() async {
         degradationPreference: DegradationPreference.maintainQuality,
       ),
     );
-    
-    print("✅ Configuration vidéo et audio appliquée");
+
+    print("✅ Agora initialisé et configuré");
+  }
+
+  Future<void> _listenForCallEvents() async {
+    if (_isListeningForCallEvents) return;
+
+    _isListeningForCallEvents = true;
+    print("🔔 Abonnement aux événements Supabase");
+
+    _callchanel.onBroadcast(
+      event: '*',
+      callback: (payload) {
+        final eventType = payload['event'] as String?;
+        final data = payload['payload'] as Map<String, dynamic>?;
+
+        print("📩 Broadcast reçu: $eventType, data: $data");
+
+        if (eventType == 'call_ended' || 
+            (eventType == 'call_end' && data?['status'] == 'ended')) {
+          if (_isInCall) {
+            print("📴 Appel terminé côté distant, on raccroche ici aussi");
+            endCall();
+          }
+        }
+
+        if (eventType == 'call_rejected' ||
+            (eventType == 'call_end' && data?['status'] == 'rejected')) {
+          print("📴 Appel rejeté côté distant, on raccroche ici aussi");
+          endCall();
+        }
+      },
+    );
+
+    _callchanel.subscribe((status, error) {
+      if (status == RealtimeSubscribeStatus.subscribed) {
+        print("✅ Abonné au canal realtime Supabase");
+      } else if (error != null) {
+        print("❌ Erreur de souscription : $error");
+      }
+    });
   }
 
   void toggleMute() {
@@ -212,9 +225,12 @@ Future<void> _sendCallSignal() async {
 
   @override
   void dispose() {
-    print("🧹 Nettoyage des ressources Agora");
+    print("🧹 Nettoyage Agora et canal");
+    _callchanel.unsubscribe();
     _engine?.leaveChannel();
     _engine?.release();
     super.dispose();
   }
-}
+} 
+
+
