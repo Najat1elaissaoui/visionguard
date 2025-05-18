@@ -27,7 +27,7 @@ class _WelcomePageState extends State<WelcomePage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(150.0),
-              child: Image(image: AssetImage('images/loogoo.jpg')),
+              child: Image(image: AssetImage('images/loogoo.png')),
             ),
             SizedBox(height: 100),
             Text(

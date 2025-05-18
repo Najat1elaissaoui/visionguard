@@ -157,7 +157,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Image.asset(
-                            'images/loogoo.jpg',
+                            'images/loogoo.png',
                             height: 60,
                           ),
                           Column(
